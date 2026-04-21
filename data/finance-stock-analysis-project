@@ -1,0 +1,51 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+
+df = pd.read_csv("data.csv")
+
+df["Date"] = pd.to_datetime(df["Date"])
+
+print(df.head())
+print(df.shape)
+print(df.describe())
+
+df = df.drop_duplicates()
+
+df["Daily_Return"] = df["Close"].pct_change()
+df["Moving_Avg"] = df["Close"].rolling(window=3).mean()
+
+plt.figure()
+plt.plot(df["Date"], df["Close"])
+plt.xticks(rotation=45)
+plt.savefig("close_price_trend.png")
+
+plt.figure()
+sns.lineplot(x=df["Date"], y=df["Moving_Avg"])
+plt.xticks(rotation=45)
+plt.savefig("moving_average.png")
+
+corr = df.drop(columns=["Date"]).corr()
+plt.figure(figsize=(8,6))
+sns.heatmap(corr, annot=True, cmap="coolwarm")
+plt.savefig("correlation.png")
+
+df = df.dropna()
+
+X = df[["Open", "High", "Low", "Volume"]]
+y = df["Close"]
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+
+model = LinearRegression()
+model.fit(X_train, y_train)
+
+pred = model.predict(X_test)
+
+results = pd.DataFrame({"Actual": y_test, "Predicted": pred})
+print(results)
+
+df.to_csv("cleaned_finance_data.csv", index=False)
